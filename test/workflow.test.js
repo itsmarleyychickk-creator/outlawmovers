@@ -31,6 +31,6 @@ test('customer inquiry, protected office workflow, dispatch validation and persi
  assert.equal((await request('/api/messages','POST',{customerId:job.customerId,channel:'Phone',text:'Confirmed pickup',draft:false})).status,200);
  assert.equal((await fetch(base+'/transport-packet.pdf')).status,403);assert.equal((await fetch(base+'/customer')).status,200);assert.equal((await fetch(base+'/transport-packet.pdf',{headers:{Cookie:cookie}})).headers.get('content-type'),'application/pdf');
  const csrf=await fetch(base+'/api/tasks',{method:'POST',headers:{Cookie:cookie,Origin:'https://elsewhere.example','Content-Type':'application/json'},body:JSON.stringify({title:'Bad'})});assert.equal(csrf.status,403);
- await stop();cookie=null;await start();await login();s=(await request('/api/state')).data;assert.equal(s.jobs[0].status,'Dispatched');assert.equal(s.tasks[0].done,true);assert.equal((await request('/api/track?token='+token,'GET',undefined,false)).data.status,'Dispatched');
+ await stop();cookie=null;await start();await login();s=(await request('/api/state')).data;assert.equal(s.jobs[0].status,'Dispatched');assert.equal(s.tasks.find(t=>t.id===task.data.id).done,true);assert.equal((await request('/api/track?token='+token,'GET',undefined,false)).data.status,'Dispatched');
  }finally{if(proc&&proc.exitCode===null)await stop();rmSync(dir,{recursive:true,force:true});}
 });

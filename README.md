@@ -40,3 +40,27 @@ This is a local working application, not a publicly deployed service. Before pub
 ## Public website and company email
 
 The company contact email is **John.henry@outlawmoversllc.com**. The separate `docs/` site is prepared for free GitHub Pages hosting and the purchased Squarespace domain. See [GITHUB-PAGES.md](GITHUB-PAGES.md) for publication and DNS instructions. GitHub Pages serves the public contact website; the office database application still needs server hosting for online use.
+
+## Business setup and everyday office work
+
+The office opens on **Business setup**. Eighteen transport-only worksheets cover company standing, tax identity, local registration, carrier authority, insurer filings, UCR, fleet inspection, driver qualification, testing/Clearinghouse, IRP, IFTA/KIT, KYU, Form 2290, move permits, customer release records and conditional employee obligations. Each has source references, plain-language steps, editable unknown fields, official instruction links, attachments and printable preparation sheets. These sheets are not substitutes for agency applications. Completing a worksheet records a staff decision, not a government approval or filing.
+
+- Draft edits autosave after a short pause; check the **Saved** indicator before leaving. **Save progress** saves and refreshes immediately. Concurrent edits are rejected rather than silently overwritten.
+- Complete a record only after confirming applicability, all checklist steps, evidence and completion date. Record why an item does not apply in its evidence/notes.
+- Use **Another record** for more drivers, trucks, tax periods or moves. **Start next renewal** retains prior versions and proposes a date only from your recorded repeat schedule. Confirm it against the agency notice before saving; policies and credentials keep their own actual expiration fields.
+- Renewals appear inside the app based on confirmed dates and your chosen lead time. **Export renewal calendar** downloads an ICS file for a calendar application. The app does not send email/SMS reminders or monitor deadlines while it is closed.
+- **Employees** stores contacts, roles, qualification dates and private documents. **Equipment** stores vehicles, availability, registration/inspection dates and needed repairs. Use matching driver/fleet setup worksheets to track their recurring compliance actions.
+- **Finance** saves income and expenses with dates, categories, parties, payment methods, receipts and optional job links. The net summary is recorded income less recorded expenses; job profitability excludes unrecorded costs and accounting/tax adjustments. Quote amounts and manually recorded job deposits are not added to ledger income automatically.
+- **Departments** routes task queues. Inquiry/quote acceptance goes to Customer Service; scheduling to Dispatch; dispatched moves to Operations; delivered moves to Finance. Compliance follow-ups, fleet repairs and transaction reviews route to their queues. Assign an employee and due date, then complete the task when done. These are internal handoffs, not external messages or agency submissions.
+- Jobs support an assigned employee, equipment, planned date and pickup time. Assignments are planning records and do not check full availability or staffing conflicts automatically.
+- Record edits and uploads have stored history. Documents are saved inside the SQLite database, available only after staff login. Evidence attachments support up to 10 MB. JSON exports include history and file metadata; a full private `data/` backup preserves document bytes and tracking links. Do not publish that directory.
+
+To import the packet's known fields into **private local storage** without overwriting filled fields:
+
+```sh
+node scripts/import-packet.js data/transport-packet.pdf
+```
+
+Requires `pdftotext` on the machine running the import. Source identifiers/policy details are read from the private PDF and never embedded in tracked source code. Imported data remains unverified, with packet conflicts recorded in notes.
+
+For a free local installation, install Node.js 24+ and run `scripts/start-office.bat` on Windows or `bash scripts/start-office.sh` on macOS/Linux. Sign in locally using the generated `data/office-password.txt`. Keep the private data folder and PDF together. An online multi-device deployment still needs a persistent server; GitHub Pages cannot run this workspace. There is one shared office password at present; individual staff login permissions, payroll processing, automatic outbound communications, payment processing and official agency filing integrations are not implemented.
