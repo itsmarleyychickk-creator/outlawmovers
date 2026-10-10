@@ -73,3 +73,7 @@ After installing Node.js 24+, double-click `START-OFFICE.bat` in the extracted o
 ## Private administrator and actual PDF forms
 
 Install the pinned PDF dependencies with `npm ci` before starting. The app's authenticated administrator entry is `/admin`. **Filing documents** opens actual form pages from the private source packet, supports click-to-place typed answers, versioned saved drafts, archived source versions and PDF downloads. It does not sign or submit a filing. See [ONLINE-ADMIN.md](ONLINE-ADMIN.md) for the online hosting prerequisites and filing workflow. An optional paid hosting blueprint is prepared in `render.yaml`; no service is provisioned by saving this file.
+
+## Free online office with Supabase
+
+The GitHub Pages office at `/office/` uses Supabase Auth, private records and private document Storage. It reuses the office workflow and PDF editor; the original SQLite app remains unchanged. See [ONLINE-ADMIN.md](ONLINE-ADMIN.md) for first login, authentication redirect settings, private packet upload and migration/backup limitations. Rebuild with `npm run build:online`. No paid hosting was purchased.
