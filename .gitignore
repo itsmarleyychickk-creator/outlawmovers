@@ -2,3 +2,4 @@ data/
 *.log
 backups/
 *.zip
+node_modules/

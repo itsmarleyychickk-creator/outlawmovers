@@ -1,10 +1,11 @@
+import {renderForms} from './form-editor.js';
 import {renderCompliance,renderRecords,renderFinance,renderDepartments} from './compliance-ui.js';
 const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state,page='Business setup',query='';
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(n||0));
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-const names=['Business setup','Employees','Equipment','Finance','Departments','Overview','Customers','Transport jobs','Follow-ups','Customer service','Company & documents'];
-const icons=['✓','♙','⚙','$','⇄','◈','♙','▤','◷','✉','▥'];
+const names=['Business setup','Filing documents','Employees','Equipment','Finance','Departments','Overview','Customers','Transport jobs','Follow-ups','Customer service','Company & documents'];
+const icons=['✓','▤','♙','⚙','$','⇄','◈','♙','▤','◷','✉','▥'];
 async function api(path,method='GET',data){const r=await fetch('/api/'+path,{method,headers:{'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});const b=await r.json();if(!r.ok)throw Error(b.error);return b;}
 function toast(t){$('#toast').textContent=t;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',3500);}
 async function refresh(){state=await api('state');render();}
@@ -18,6 +19,7 @@ function render(){
  $('#nav').innerHTML=names.map((n,i)=>`<button data-page="${n}" class="${page===n?'active':''}"><span>${icons[i]}</span>${n}</button>`).join('');$('#breadcrumb').textContent='Office / '+page;
  const c=state.company[0],active=state.jobs.filter(j=>!['Delivered','Cancelled'].includes(j.status)),open=state.tasks.filter(t=>!t.done);
  if(page==='Business setup'){renderCompliance(state);document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;query='';render();});return;}
+ if(page==='Filing documents'){renderForms(state);document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;query='';render();});return;}
  if(page==='Finance'||page==='Departments'){(page==='Finance'?renderFinance:renderDepartments)(state);document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;query='';render();});return;}
  if(page==='Employees'||page==='Equipment'){renderRecords(state,page==='Employees'?'employees':'equipment');document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;query='';render();});return;}
  let html='';

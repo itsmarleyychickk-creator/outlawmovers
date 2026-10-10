@@ -14,5 +14,13 @@ if errorlevel 1 (
 )
 echo Starting Outlaw Movers office on this computer, port 3000.
 echo Keep this window open. Your private password will be in data\office-password.txt.
+if not exist node_modules\pdf-lib\package.json (
+  call npm ci
+  if errorlevel 1 (
+    echo Dependency installation failed. Please share the error text without passwords.
+    pause
+    exit /b 1
+  )
+)
 node scripts/start-office.js
 pause

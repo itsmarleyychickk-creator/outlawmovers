@@ -1,0 +1,27 @@
+# Optional paid hosting blueprint. This file does not create or purchase hosting.
+# Review the provider's current price before selecting Create/Deploy.
+services:
+  - type: web
+    name: outlaw-movers-office
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /login
+    disk:
+      name: private-office-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: APP_DATA_DIR
+        value: /var/data
+      - key: OFFICE_PASSWORD
+        generateValue: true
+      - key: PUBLIC_ORIGIN
+        sync: false

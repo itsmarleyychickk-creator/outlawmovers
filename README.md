@@ -1,11 +1,12 @@
 # Outlaw Movers office & customer care
 
-A working office-management application for mobile-home transport, built from the supplied Outlaw Movers transport-only packet. Node.js 24 or newer; no npm dependencies or build step.
+A working office-management application for mobile-home transport, built from the supplied Outlaw Movers transport-only packet. Node.js 24 or newer; pinned PDF dependencies and no application build step.
 
 ## Run
 
 ```sh
 cd /workspace/outlawmovers
+npm ci
 npm test
 npm start
 ```
@@ -68,3 +69,7 @@ For a free local installation, install Node.js 24+ and run `scripts/start-office
 ### Windows launcher and local backup
 
 After installing Node.js 24+, double-click `START-OFFICE.bat` in the extracted office folder. The launcher opens the login in your browser and the generated local password in Notepad, without printing it in logs. Keep the command window open. See `WINDOWS-START-HERE.txt`. A daily SQLite backup is made when you start the launcher if an existing database is present; the source PDF is copied to the local backup folder. Backups on the same computer do not protect against disk loss, so copy the office folder to a secure external backup regularly. The private Windows package retains saved office data and source PDF; it excludes the previous instance's password, generating a new local password at first start.
+
+## Private administrator and actual PDF forms
+
+Install the pinned PDF dependencies with `npm ci` before starting. The app's authenticated administrator entry is `/admin`. **Filing documents** opens actual form pages from the private source packet, supports click-to-place typed answers, versioned saved drafts, archived source versions and PDF downloads. It does not sign or submit a filing. See [ONLINE-ADMIN.md](ONLINE-ADMIN.md) for the online hosting prerequisites and filing workflow. An optional paid hosting blueprint is prepared in `render.yaml`; no service is provisioned by saving this file.

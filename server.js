@@ -1,21 +1,30 @@
 import http from 'node:http';
+import {formCatalog,validateForm,renderForm} from './forms.js';
 import { requirements, reminders, dateValid } from './compliance.js';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomUUID, randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 const root=dirname(fileURLToPath(import.meta.url));
-const dbPath=process.env.DATABASE_PATH||resolve(root,'data/office.sqlite');
+const appData=process.env.APP_DATA_DIR||resolve(root,'data');
+const dbPath=process.env.DATABASE_PATH||resolve(appData,'office.sqlite');
+const publicOrigin=process.env.PUBLIC_ORIGIN||'';
+if(publicOrigin&&(!publicOrigin.startsWith('https://')||new URL(publicOrigin).origin!==publicOrigin))throw Error('PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash');
+if(process.env.NODE_ENV==='production'&&(!publicOrigin||!process.env.OFFICE_PASSWORD||process.env.OFFICE_PASSWORD.length<20))throw Error('Production requires PUBLIC_ORIGIN and a securely configured OFFICE_PASSWORD of at least 20 characters');
 mkdirSync(dirname(dbPath),{recursive:true});
 const db=new DatabaseSync(dbPath);
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL,id TEXT PRIMARY KEY,body TEXT NOT NULL);');
-const kinds=['customers','jobs','tasks','messages','company','compliance','employees','equipment','ledger'];
-const passwordPath=resolve(root,'data/office-password.txt');
+const kinds=['customers','jobs','tasks','messages','company','compliance','employees','equipment','ledger','forms'];
+const passwordPath=resolve(appData,'office-password.txt');
 mkdirSync(dirname(passwordPath),{recursive:true});
 if(!existsSync(passwordPath))writeFileSync(passwordPath,randomBytes(18).toString('base64url'),{mode:0o600});
 const password=process.env.OFFICE_PASSWORD||readFileSync(passwordPath,'utf8').trim();
-const sessions=new Set();
+const sessions=new Map();
+const loginAttempts=new Map();
+function sessionActive(token){const expiry=sessions.get(token);if(!expiry)return false;if(expiry<Date.now()){sessions.delete(token);return false;}return true;}
+const cookieFlags='HttpOnly; SameSite=Strict; Path=/'+(publicOrigin?'; Secure':'');
+db.exec('CREATE TABLE IF NOT EXISTS packet_versions (hash TEXT PRIMARY KEY,content BLOB NOT NULL);');
 db.exec('CREATE TABLE IF NOT EXISTS links (token TEXT PRIMARY KEY, jobId TEXT NOT NULL UNIQUE);');
 const checks=['Signed transport agreement','Ownership / move authorization','Unit identifiers and dimensions','Route approval and permits','Insurance evidence','Driver and vehicle inspection','Escort arrangements','Delivery acceptance'];
 if(!db.prepare("SELECT id FROM records WHERE kind='company'").get()) db.prepare('INSERT INTO records VALUES (?,?,?)').run('company','company',JSON.stringify({id:'company',name:'Outlaw Movers LLC',manager:'Kristin L. Canada',phone:'270-312-2274',email:'John.henry@outlawmoversllc.com',address:'10295 Gracey Herndon Rd, Herndon, KY 42236',owner:'John H. Newberry',standing:'Needs verification',authority:'Needs verification',insurance:'Needs verification',notes:'Imported from supplied packet. Company standing, carrier authority and insurance coverage require current evidence. Transport only; no installation or site work.'}));
@@ -23,6 +32,7 @@ db.exec('CREATE TABLE IF NOT EXISTS audit (id TEXT PRIMARY KEY, recordId TEXT NO
 for(const d of requirements){const id='setup-'+d.id;if(!db.prepare('SELECT id FROM records WHERE id=?').get(id))db.prepare('INSERT INTO records VALUES (?,?,?)').run('compliance',id,JSON.stringify({id,requirementId:d.id,title:d.title,status:'Not started',applicability:'Needs review',values:{},nextDue:'',remindDays:30,recurrence:'None',notes:'',completedSteps:[],version:1,updatedAt:new Date().toISOString()}));}
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
 function validate(kind,b){
+ if(kind==='forms')validateForm(b);
  if(!b||typeof b!=='object'||Array.isArray(b))throw Error('Invalid record');
  if(['employees','equipment'].includes(kind)&&!String(b.name||'').trim())throw Error('Name is required');
  if(kind==='ledger'){
@@ -60,14 +70,18 @@ function validate(kind,b){
 }
 const server=http.createServer(async(req,res)=>{
  try{
+ res.setHeader('Referrer-Policy','no-referrer');
+ res.setHeader('X-Content-Type-Options','nosniff');
+ if(publicOrigin)res.setHeader('Strict-Transport-Security','max-age=31536000');
  const url=new URL(req.url,'http://localhost');
  if(url.pathname.startsWith('/api/')){
-  const origin=req.headers.origin;if(origin&&new URL(origin).host!==req.headers.host)return send(res,403,{error:'Cross-origin requests are not permitted'});
+  const origin=req.headers.origin;if(origin&&(publicOrigin?origin!==publicOrigin:new URL(origin).host!==req.headers.host))return send(res,403,{error:'Cross-origin requests are not permitted'});
   const readBody=async()=>{let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>100000)throw Error('Request too large');}return JSON.parse(raw);};
   if(url.pathname==='/api/login'&&req.method==='POST'){
+   const ip=req.socket.remoteAddress;let attempt=loginAttempts.get(ip);if(attempt&&attempt.until<Date.now()){loginAttempts.delete(ip);attempt=null;}if(attempt?.count>=8)return send(res,429,{error:'Too many sign-in attempts. Wait 10 minutes before trying again.'});
    const b=await readBody(),a=Buffer.from(String(b.password||'')),expected=Buffer.from(password);
-   if(a.length!==expected.length||!timingSafeEqual(a,expected))return send(res,401,{error:'Incorrect office password'});
-   const token=randomBytes(32).toString('hex');sessions.add(token);res.setHeader('Set-Cookie',`office=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`);return send(res,200,{ok:true});
+   if(a.length!==expected.length||!timingSafeEqual(a,expected)){loginAttempts.set(ip,{count:(attempt?.count||0)+1,until:attempt?.until||Date.now()+600000});return send(res,401,{error:'Incorrect office password'});}loginAttempts.delete(ip);
+   const token=randomBytes(32).toString('hex');sessions.set(token,Date.now()+28800000);res.setHeader('Set-Cookie',`office=${token}; ${cookieFlags}; Max-Age=28800`);return send(res,200,{ok:true});
   }
   if(url.pathname==='/api/request-quote'&&req.method==='POST'){
    const b=await readBody();if(!b.name||(!b.phone&&!b.email)||!b.origin||!b.destination)throw Error('Name, contact, pickup and delivery are required');
@@ -87,14 +101,23 @@ const server=http.createServer(async(req,res)=>{
    const r=db.prepare("SELECT body FROM records WHERE kind='jobs' AND id=?").get(link.jobId);if(!r)return send(res,404,{error:'Job not found'});const j=JSON.parse(r.body);return send(res,200,Object.fromEntries(['status','origin','destination','date','unit','quote','deposit','publicUpdate'].map(k=>[k,j[k]||''])));
   }
   const session=/office=([^;]+)/.exec(req.headers.cookie||'')?.[1];
-  if(!sessions.has(session))return send(res,401,{error:'Office login required'});
-  if(url.pathname==='/api/logout'){sessions.delete(session);res.setHeader('Set-Cookie','office=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return send(res,200,{ok:true});}
+  if(!sessionActive(session))return send(res,401,{error:'Office login required'});
+  if(url.pathname==='/api/logout'){sessions.delete(session);res.setHeader('Set-Cookie','office=; '+cookieFlags+'; Max-Age=0');return send(res,200,{ok:true});}
   if(url.pathname==='/api/customer-link'&&req.method==='POST'){
    const b=await readBody();if(!db.prepare("SELECT id FROM records WHERE kind='jobs' AND id=?").get(b.jobId))throw Error('Job not found');
    let link=db.prepare('SELECT token FROM links WHERE jobId=?').get(b.jobId);if(!link){link={token:randomBytes(24).toString('hex')};db.prepare('INSERT INTO links VALUES (?,?)').run(link.token,b.jobId);}return send(res,200,link);
   }
   if(url.pathname==='/api/state'&&req.method==='GET'){
-   const state=Object.fromEntries(kinds.map(k=>[k,db.prepare('SELECT body FROM records WHERE kind=?').all(k).map(r=>JSON.parse(r.body))]));const audit=db.prepare('SELECT body FROM audit ORDER BY rowid DESC').all().map(r=>JSON.parse(r.body));const documents=db.prepare('SELECT id,recordId,name,createdAt FROM documents').all();return send(res,200,{...state,checks,requirements,reminders:reminders(state.compliance),audit,documents});
+   const state=Object.fromEntries(kinds.map(k=>[k,db.prepare('SELECT body FROM records WHERE kind=?').all(k).map(r=>JSON.parse(r.body))]));const audit=db.prepare('SELECT body FROM audit ORDER BY rowid DESC').all().map(r=>JSON.parse(r.body));const documents=db.prepare('SELECT id,recordId,name,createdAt FROM documents').all();return send(res,200,{...state,checks,formCatalog,requirements,reminders:reminders(state.compliance),audit,documents});
+  }
+  if(url.pathname==='/api/source-packet'&&req.method==='POST'){
+   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>15000000)return send(res,413,{error:'Choose a PDF smaller than 10 MB'});}const b=JSON.parse(raw);if(typeof b.content!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(b.content))throw Error('Invalid PDF upload');const bytes=Buffer.from(b.content,'base64');if(bytes.length>10000000||!bytes.subarray(0,5).equals(Buffer.from('%PDF-')))throw Error('Choose a valid PDF smaller than 10 MB');await renderForm(bytes,'irp-lease',[]);const path=process.env.TRANSPORT_PACKET_PATH||resolve(appData,'transport-packet.pdf');const now=new Date().toISOString();
+   const hash=createHash('sha256').update(bytes).digest('hex');db.prepare('INSERT OR IGNORE INTO packet_versions VALUES (?,?)').run(hash,bytes);mkdirSync(dirname(path),{recursive:true});writeFileSync(path,bytes,{mode:0o600});db.prepare('INSERT INTO audit VALUES (?,?,?)').run(randomUUID(),'source-packet',JSON.stringify({recordId:'source-packet',action:'Source packet uploaded',hash,at:now}));return send(res,201,{ok:true});
+  }
+  if(url.pathname.startsWith('/api/form-pdf/')&&req.method==='GET'){
+   const id=url.pathname.split('/')[3];const saved=db.prepare("SELECT body FROM records WHERE kind='forms' AND id=?").get(id);const record=saved?JSON.parse(saved.body):null;const def=formCatalog.find(d=>d.id===(record?.formId||id));if(!def)return send(res,404,{error:'Form not found'});
+   const archived=record?.packetHash?db.prepare('SELECT content FROM packet_versions WHERE hash=?').get(record.packetHash):null;const bytes=await renderForm(archived?.content||readFileSync(process.env.TRANSPORT_PACKET_PATH||resolve(appData,'transport-packet.pdf')),def.id,url.searchParams.has('source')?[]:record?.fields||[]);
+   res.writeHead(200,{'Content-Type':'application/pdf','Cache-Control':'no-store','Content-Disposition':url.searchParams.has('download')?'attachment; filename="outlaw-'+def.id+'.pdf"':'inline'});return res.end(Buffer.from(bytes));
   }
   if(url.pathname==='/api/evidence'&&req.method==='POST'){
    let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>15000000)return send(res,413,{error:'File exceeds 10 MB limit'});}const b=JSON.parse(raw);
@@ -107,7 +130,7 @@ const server=http.createServer(async(req,res)=>{
   }
   const [, ,kind,id]=url.pathname.split('/');if(!kinds.includes(kind))return send(res,404,{error:'Not found'});
   if(req.method==='DELETE'){
-   if(['company','compliance','employees','equipment','ledger'].includes(kind))return send(res,400,{error:'Archive or update this record; permanent deletion is disabled to preserve history'});
+   if(['company','compliance','employees','equipment','ledger','forms'].includes(kind))return send(res,400,{error:'Archive or update this record; permanent deletion is disabled to preserve history'});
    if(kind==='customers'&&db.prepare("SELECT body FROM records WHERE kind IN ('jobs','messages')").all().some(r=>JSON.parse(r.body).customerId===id))return send(res,409,{error:'Customer has linked jobs or messages'});
    db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,id||'');return send(res,200,{ok:true});
   }
@@ -118,11 +141,12 @@ const server=http.createServer(async(req,res)=>{
    if(req.method==='PUT'&&!db.prepare('SELECT id FROM records WHERE kind=? AND id=?').get(kind,key))return send(res,404,{error:'Record not found'});
    const previous=db.prepare('SELECT body FROM records WHERE kind=? AND id=?').get(kind,key);
    const before=previous?JSON.parse(previous.body):null;
-   if(kind==='compliance'&&before&&b.version!==before.version)return send(res,409,{error:'This worksheet changed in another window. Refresh before saving.'});
+   if(['compliance','forms'].includes(kind)&&before&&b.version!==before.version)return send(res,409,{error:'This worksheet changed in another window. Refresh before saving.'});
    const record={...b,id:key,updatedAt:new Date().toISOString()};
-   if(kind==='compliance'){record.version=(before?.version||0)+1;delete record.history;}
+   if(['compliance','forms'].includes(kind)){record.version=(before?.version||0)+1;delete record.history;}
 
-   db.exec('BEGIN');try{db.prepare('INSERT INTO records VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE kind=excluded.kind').run(kind,key,JSON.stringify(record));
+   let packetBytes;if(kind==='forms'){const prior=before?.packetHash?db.prepare('SELECT content FROM packet_versions WHERE hash=?').get(before.packetHash):null;packetBytes=prior?.content||readFileSync(process.env.TRANSPORT_PACKET_PATH||resolve(appData,'transport-packet.pdf'));record.packetHash=createHash('sha256').update(packetBytes).digest('hex');}
+   db.exec('BEGIN');try{if(packetBytes)db.prepare('INSERT OR IGNORE INTO packet_versions VALUES (?,?)').run(record.packetHash,packetBytes);db.prepare('INSERT INTO records VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE kind=excluded.kind').run(kind,key,JSON.stringify(record));
    db.prepare('INSERT INTO audit VALUES (?,?,?)').run(randomUUID(),key,JSON.stringify({recordId:key,kind,action:before?'Record updated':'Record created',at:record.updatedAt,before,after:record}));
    let route=null;
    if(kind==='jobs'&&before?.status!==record.status){const routes={Inquiry:['Customer Service','Follow up on transport inquiry'],Quoted:['Customer Service','Confirm customer quote acceptance'],Scheduled:['Dispatch','Coordinate crew, vehicle, permits and route'],Dispatched:['Operations','Track move and collect delivery acceptance'],Delivered:['Finance','Reconcile income, expenses and final balance'],Cancelled:['Customer Service','Confirm cancellation and any refund review']};route=routes[record.status];}
@@ -134,10 +158,11 @@ const server=http.createServer(async(req,res)=>{
   }
   return send(res,405,{error:'Method not allowed'});
  }
- if(url.pathname==='/'&&!sessions.has(/office=([^;]+)/.exec(req.headers.cookie||'')?.[1])){res.writeHead(302,{Location:'/login'});return res.end();}
- if(url.pathname==='/transport-packet.pdf'&&!sessions.has(/office=([^;]+)/.exec(req.headers.cookie||'')?.[1])){res.writeHead(403);return res.end('Office login required');}
- const files={'/':'index.html','/app.js':'app.js','/compliance-ui.js':'compliance-ui.js','/style.css':'style.css','/customer':'customer.html','/customer.js':'customer.js','/login':'login.html','/login.js':'login.js','/transport-packet.pdf':'transport-packet.pdf'};const file=files[url.pathname];if(!file){res.writeHead(404);return res.end('Not found');}
- res.writeHead(200,{'Content-Type':file.endsWith('.pdf')?'application/pdf':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; frame-ancestors 'none'"});res.end(readFileSync(file==='transport-packet.pdf'?(process.env.TRANSPORT_PACKET_PATH||resolve(root,'data',file)):resolve(root,'public',file)));
+ if(['/','/admin'].includes(url.pathname)&&!sessionActive(/office=([^;]+)/.exec(req.headers.cookie||'')?.[1])){res.writeHead(302,{Location:'/login'});return res.end();}
+ if(url.pathname==='/transport-packet.pdf'&&!sessionActive(/office=([^;]+)/.exec(req.headers.cookie||'')?.[1])){res.writeHead(403);return res.end('Office login required');}
+ if(url.pathname==='/vendor/pdf.mjs'||url.pathname==='/vendor/pdf.worker.mjs'){res.writeHead(200,{'Content-Type':'text/javascript'});return res.end(readFileSync(resolve(root,'node_modules/pdfjs-dist/build',url.pathname.endsWith('worker.mjs')?'pdf.worker.mjs':'pdf.mjs')));}
+ const files={'/':'index.html','/admin':'index.html','/form-editor.js':'form-editor.js','/app.js':'app.js','/compliance-ui.js':'compliance-ui.js','/style.css':'style.css','/customer':'customer.html','/customer.js':'customer.js','/login':'login.html','/login.js':'login.js','/transport-packet.pdf':'transport-packet.pdf'};const file=files[url.pathname];if(!file){res.writeHead(404);return res.end('Not found');}
+ res.writeHead(200,{'Cache-Control':'no-store','Content-Type':file.endsWith('.pdf')?'application/pdf':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'"});res.end(readFileSync(file==='transport-packet.pdf'?(process.env.TRANSPORT_PACKET_PATH||resolve(appData,file)):resolve(root,'public',file)));
  }catch(e){send(res,400,{error:e.message});}
 });
 server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`Outlaw office listening on port ${server.address().port}`));
