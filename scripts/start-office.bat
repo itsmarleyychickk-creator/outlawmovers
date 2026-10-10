@@ -14,5 +14,5 @@ if errorlevel 1 (
 )
 echo Starting Outlaw Movers office on this computer, port 3000.
 echo Keep this window open. Your private password will be in data\office-password.txt.
-node server.js
+node scripts/start-office.js
 pause

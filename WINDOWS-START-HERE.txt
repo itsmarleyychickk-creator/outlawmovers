@@ -1,0 +1,41 @@
+OUTLAW MOVERS LLC - WINDOWS OFFICE APP
+
+1. Install Node.js 24 LTS or newer from https://nodejs.org.
+   Choose the Windows installer and keep its default settings.
+
+2. Extract ALL files from the ZIP into a folder you control, such as
+   Documents\Outlaw-Movers-Office. Do not run it from inside the ZIP.
+   If an office folder already exists, do not replace its data folder.
+
+3. Double-click START-OFFICE.bat.
+   The office login opens in your browser. Your generated local office
+   password opens in Notepad. Copy it into the login form.
+   Keep the command window open while working. Close Notepad after login.
+
+4. Start with Business setup, then work through the company, carrier,
+   insurance, fleet and driver records. Imported PDF fields are unverified.
+   Follow official links to submit actual agency filings.
+
+5. Use Employees, Equipment, Customers, Transport jobs, Finance and
+   Departments for everyday work. Records save on this computer.
+
+BACKUPS
+Opening the launcher makes a daily database backup when a database exists.
+The backups folder is on the same computer. Regularly copy the whole office
+folder to a secure external drive or another protected location. If the PC
+fails, backups on the same PC may be lost. Keep this package private:
+it contains business identifiers, source paperwork and saved records.
+
+IMPORTANT
+- This is one-computer operation. Do not upload its data, backups or PDF
+  to GitHub or put the office folder on a public website.
+- There is one shared office password. Staff access roles are not implemented.
+- The public website cannot send inquiries to this local office automatically.
+  Customers email you; log received inquiries in the local office app.
+- Reminders appear when you open the office; calendar export helps you keep
+  deadlines in a calendar. The app does not send reminder emails.
+- No payroll processing, bank connection, tax submission or online payment
+  processing is included.
+- To open again, double-click START-OFFICE.bat. Do not re-extract over your data.
+
+If Windows shows an error, share the error text, not passwords or private IDs.
