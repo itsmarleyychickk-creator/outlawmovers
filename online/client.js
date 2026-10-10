@@ -1,4 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
+if(location.protocol!=='https:'){
+ const main=document.createElement('main');main.className='customer-main';const title=document.createElement('h1');title.textContent='Secure connection required';const message=document.createElement('p');message.textContent='Administrator sign-in is blocked over HTTP. Enable HTTPS for the GitHub Pages custom domain before entering your email or password.';const link=document.createElement('a');const secure=new URL(location.href);secure.protocol='https:';link.href=secure.href;link.textContent='Open HTTPS office';main.append(title,message,link);document.body.replaceChildren(main);throw Error('HTTPS required for the office');
+}
 const project='https://uuwaomequwaktlvgmaid.supabase.co';
 // This publishable key is deliberately public. RLS and verified administrator access protect data.
 const key='sb_publishable_M5JNDnIHWqObZd8iwVwc4A_ug3IxVYJ';

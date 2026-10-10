@@ -2,6 +2,10 @@
 
 The online office is served by GitHub Pages at `/office/`. Supabase provides individual email/password authentication, private database records, and a private `office-documents` Storage bucket. No paid Node hosting is needed for this version. The original Node/SQLite app remains intact for local use; the Render blueprint below is optional and is not used by the online office.
 
+## HTTPS prerequisite
+
+The custom domain was observed redirecting the default Pages address to HTTP, and its HTTPS endpoint returned a certificate hostname mismatch. In GitHub **Settings → Pages**, confirm `outlawmoversllc.com`, finish the DNS check/certificate issuance, and enable **Enforce HTTPS**. The online office refuses to sign in over HTTP. No DNS or email records were changed by this integration. The deployment workflow succeeded, but real administrator login and document-download validation remain pending HTTPS setup and account creation.
+
 ## First administrator login
 
 Open https://outlawmoversllc.com/office/login.html, create your authorized account with a password of at least 12 characters, confirm the email, then sign in. Only verified email accounts on the server-managed administrator allowlist can access records; ordinary signups have no office permissions. The allowlist is private, is not in Git, and cannot be changed by browser users. Administrator credentials must never be entered into source files or sent in chat.
