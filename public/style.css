@@ -16,3 +16,5 @@ input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{out
 @media print{.logo-badge{width:62px;height:62px;box-shadow:none}.print-only h1{border-bottom:2px solid #b4862a;padding-bottom:12px}.print-only{color:#211b14;background:white}}
 
 aside{background:#f3e9d7;color:#342b20;border-right:1px solid #dbc59a;padding:25px 18px}.brand{letter-spacing:.5px}.brand small,.workspace,.aside-bottom,.aside-bottom small{color:#7b674a}nav button{color:#534735}nav button.active{background:#e4cc99;color:#332510;border-left:3px solid #a87922}nav button:hover{background:#eadcbc;color:#332510}header{background:#fffdf8;border-bottom-color:#e5d6b8}.avatar{color:#4e3d24}.customer-main header .brand{gap:16px}.local{color:#876021}
+
+.fleet-unit>summary{cursor:pointer;padding:12px;font-size:17px}.fleet-unit summary small{display:block;margin-top:8px}.fleet-unit>details{padding:14px 0;border-top:1px solid #ccc}.fleet-unit>details>summary{cursor:pointer;font-weight:bold}.fleet-notes{white-space:pre-wrap}.fleet-unit button{margin:4px}
