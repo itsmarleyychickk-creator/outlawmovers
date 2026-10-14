@@ -3,7 +3,7 @@ import {build} from 'esbuild';
 const out='docs/office';mkdirSync(out+'/vendor',{recursive:true});
 let html=readFileSync('public/index.html','utf8').replace('href="/style.css"','href="./style.css"').replace('src="/app.js"','src="./client.js"').replace('● Local office workspace','● Private online office').replace('Kristin Canada','Administrator').replace('src="/assets/outlaw-brand.png"','src="../assets/outlaw-brand.png"');
 writeFileSync(out+'/index.html',html);copyFileSync('public/style.css',out+'/style.css');
-for(const file of ['app.js','compliance-ui.js','form-editor.js']){
+for(const file of ['app.js','compliance-ui.js','form-editor.js','operations-ui.js']){
  let s=readFileSync('public/'+file,'utf8');
  s=s.replace("from '/vendor/pdf.mjs'","from './vendor/pdf.mjs'").replace("='/vendor/pdf.worker.mjs'","='./vendor/pdf.worker.mjs'").replace("location.href='/login'","location.href='./login.html'");
  if(file==='app.js'){

@@ -1,3 +1,11 @@
+## Office expansion — October 14, 2026
+
+The public footer has a Staff sign in link to `/office/login.html`. The business email has been authorized privately; create the account and confirm the email before first sign-in. No password is stored in source. HTTPS and Auth redirect configuration below still require live confirmation before relying on sign-in.
+
+The private workspace includes Jobs & quotes for mobile-home transport, house moving, clearing/grading/site preparation, excavation/trenching, driveways, demolition and other work. Each job records scope, quote breakdown and total, quote validity, payments, employee/equipment assignment, dates, permit agency/status/deadline and internal notes. The Schedule view flags same-day assignment overlaps; it does not calculate shift availability. Pricing stores an internal rate sheet. Permits consolidates active job permit records. Delivered is displayed as Completed / delivered in the editor; the underlying status remains Delivered for existing task routing. Dispatched remains reserved for transport and retains company/paperwork checks.
+
+Company rates, jobs and documents are not automatically published. Customer communications are saved logs/drafts; no automatic email/SMS sending, mailbox synchronization, payroll, permit filing or restricted employee permissions are implemented. Existing compliance worksheets remain transport focused; site-work legal requirements must be confirmed per jurisdiction. A printed job summary is not a signed contract or payment receipt.
+
 # Free online administrator workspace
 
 The online office is served by GitHub Pages at `/office/`. Supabase provides individual email/password authentication, private database records, and a private `office-documents` Storage bucket. No paid Node hosting is needed for this version. The original Node/SQLite app remains intact for local use; the Render blueprint below is optional and is not used by the online office.

@@ -35,11 +35,14 @@ async function validate(db,kind,b){
  if(kind==='tasks'&&!String(b.title||'').trim())throw Error('Task title is required');
  if(kind==='messages'&&(!b.customerId||!String(b.text||'').trim()))throw Error('Customer and message are required');
  if(kind==='jobs'){
-  if(!b.customerId||!b.origin||!b.destination)throw Error('Customer, pickup and delivery are required');
+  if(!b.customerId||!String(b.origin||'').trim())throw Error('Customer and job location are required');
+  const transport=!b.service||['Mobile-home transport','House moving'].includes(b.service);
+  if(transport&&!String(b.destination||'').trim())throw Error('Transport jobs require a delivery address');
   if(!(await db.from('office_records').select('id').eq('kind','customers').eq('id',b.customerId).maybeSingle()).data)throw Error('Customer does not exist');
   if(!['Inquiry','Quoted','Scheduled','Dispatched','Delivered','Cancelled'].includes(b.status))throw Error('Invalid job status');
   for(const k of ['quote','deposit','length','width','height'])if(b[k]!==undefined&&b[k]!==''&&(!Number.isFinite(Number(b[k]))||Number(b[k])<0))throw Error('Amounts and dimensions must be nonnegative numbers');
   if(b.status==='Dispatched'){
+   if(!transport)throw Error('Use Scheduled for site work and Delivered when the job is complete. Dispatched is reserved for transport.');
    const c=(await db.from('office_records').select('body').eq('id','company').single()).data.body;
    if(['standing','authority','insurance'].some(k=>c[k]!=='Verified')||checks.slice(0,7).some(k=>!b.checks?.[k]))throw Error('Dispatch requires verified company standing, authority and insurance plus the seven pre-dispatch checks.');
   }
