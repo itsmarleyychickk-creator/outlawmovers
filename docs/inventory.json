@@ -34,5 +34,18 @@
     "price": null,
     "photos": [],
     "description": "Chicken coop for sale. Contact John for dimensions, condition, pickup arrangements and asking price."
+  },
+  {
+    "id": "adjustable-ladder-racks",
+    "title": "Adjustable ladder racks",
+    "category": "Truck accessories",
+    "status": "Available",
+    "price": 250,
+    "photos": [
+      "assets/sale/adjustable-ladder-racks.jpg"
+    ],
+    "description": "Carry more on your next project with these adjustable ladder racks. Asking $250. Call John to arrange a look and discuss fitment.",
+    "specifications": "Adjustable. Exact dimensions, fitment and load rating have not been confirmed.",
+    "pickup": "Contact John to arrange pickup."
   }
 ]
