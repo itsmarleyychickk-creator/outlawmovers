@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "four-wheeler-1",
+    "title": "Four-wheeler — 1",
+    "category": "ATVs",
+    "status": "Available",
+    "price": null,
+    "photos": [],
+    "description": "One of our two four-wheelers for sale. Contact John for make, model, condition and asking price."
+  },
+  {
+    "id": "four-wheeler-2",
+    "title": "Four-wheeler — 2",
+    "category": "ATVs",
+    "status": "Available",
+    "price": null,
+    "photos": [],
+    "description": "The second of our two four-wheelers for sale. Contact John for make, model, condition and asking price."
+  },
+  {
+    "id": "gator-1",
+    "title": "Gator",
+    "category": "Utility vehicles",
+    "status": "Available",
+    "price": null,
+    "photos": [],
+    "description": "Gator for sale. Contact John for model, specifications, condition and asking price."
+  },
+  {
+    "id": "chicken-coop-1",
+    "title": "Chicken coop",
+    "category": "Farm & outdoor",
+    "status": "Available",
+    "price": null,
+    "photos": [],
+    "description": "Chicken coop for sale. Contact John for dimensions, condition, pickup arrangements and asking price."
+  }
+]
