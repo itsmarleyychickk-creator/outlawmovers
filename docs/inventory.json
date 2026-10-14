@@ -53,9 +53,30 @@
     "status": "Available",
     "price": 2500,
     "condition": "Brand new",
-    "photos": [],
+    "photos": [
+      "assets/sale/brush-cutter-1.jpg",
+      "assets/sale/brush-cutter-2.jpg",
+      "assets/sale/brush-cutter-3.jpg"
+    ],
     "description": "Brand-new brush cutter attachment for a skid steer. $2,500 or best offer. Contact John to discuss the attachment and arrange a time to view it.",
     "specifications": "Contact us for cutting width, hydraulic requirements and mounting compatibility.",
+    "pickup": "Contact John to arrange pickup."
+  },
+  {
+    "id": "michelin-tires-17-5r25",
+    "title": "Two Michelin 17.5R25 tires on rims",
+    "category": "Equipment tires & wheels",
+    "status": "Available",
+    "price": null,
+    "condition": "Used",
+    "photos": [
+      "assets/sale/michelin-tires-1.jpg",
+      "assets/sale/michelin-tires-2.jpg",
+      "assets/sale/michelin-tires-3.jpg"
+    ],
+    "description": "Pair of Michelin tires on rims. Sidewall marking shown: 17.5R25. Contact John for pricing and to arrange a viewing.",
+    "specifications": "17.5R25 marking visible on the photographed tire. Confirm both tires’ markings, rim dimensions, bolt pattern and fitment before purchase.",
+    "knownIssues": "Visible rim rust and tire wear. Air retention and service condition have not been confirmed.",
     "pickup": "Contact John to arrange pickup."
   }
 ]
