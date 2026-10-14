@@ -41,11 +41,21 @@
     "category": "Truck accessories",
     "status": "Available",
     "price": 250,
-    "photos": [
-      "assets/sale/adjustable-ladder-racks.jpg"
-    ],
+    "photos": [],
     "description": "Carry more on your next project with these adjustable ladder racks. Asking $250. Call John to arrange a look and discuss fitment.",
     "specifications": "Adjustable. Exact dimensions, fitment and load rating have not been confirmed.",
+    "pickup": "Contact John to arrange pickup."
+  },
+  {
+    "id": "skid-steer-brush-cutter",
+    "title": "Brand-new skid-steer brush cutter — OBO",
+    "category": "Skid-steer attachments",
+    "status": "Available",
+    "price": 2500,
+    "condition": "Brand new",
+    "photos": [],
+    "description": "Brand-new brush cutter attachment for a skid steer. $2,500 or best offer. Contact John to discuss the attachment and arrange a time to view it.",
+    "specifications": "Contact us for cutting width, hydraulic requirements and mounting compatibility.",
     "pickup": "Contact John to arrange pickup."
   }
 ]
