@@ -49,3 +49,16 @@ dialog{background:#252525;color:#f5f5f5;border-color:#ff762b}
 dialog::backdrop{background:#000c}
 input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible,:focus-visible{outline:3px solid #ff995a;outline-offset:4px}
 @media print{:root,body,main,section,#for-sale,.process,footer,.cards article,.inventory-empty,dialog{background:white;color:#111}h1,h2,h3,.hero h1,p,.intro,.sub,.fine,label,a,.eyebrow,footer small{color:#111}.button{background:#eee;color:#111}}
+
+/* Original emblem used as a quiet decorative watermark, behind readable content. */
+body{position:relative;isolation:isolate}
+.site-watermark{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden;pointer-events:none;z-index:-1;opacity:.075}
+.site-watermark .logo-badge{width:min(82vw,940px);height:auto;aspect-ratio:1;border:0;box-shadow:none;background:transparent}
+.site-watermark .logo-badge img{width:361.4%;left:-62.4%;top:-4.7%}
+header{background:#171717f5}
+.hero{background:transparent}
+.cards article,.inventory-empty,.panel,dialog{background:#262626}
+.process,#for-sale{background:#252525f5}
+footer{background:#202020f5}
+@media(max-width:620px){.site-watermark .logo-badge{width:110vw}.site-watermark{opacity:.055}}
+@media print{.site-watermark{display:none}}
