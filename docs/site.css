@@ -94,3 +94,9 @@ footer{background:#202020f5}
 #quote .owner-phone{display:block;font-weight:800;font-size:clamp(17px,2vw,22px);text-decoration:none;color:#ff995a}
 #quote .owner-contact>a{overflow-wrap:anywhere}
 @media(max-width:620px){#quote .outlaw-contact{padding-left:18px}#quote .owner-contact{padding:15px}}
+
+/* Balanced contact columns and centered Outlaw headline. */
+#quote{align-items:center}
+#quote .outlaw-contact h2{text-align:center}
+#quote #quote-form{align-self:center}
+@media(max-width:620px){#quote{align-items:stretch}#quote #quote-form{align-self:stretch}}
