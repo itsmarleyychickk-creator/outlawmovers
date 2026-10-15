@@ -64,3 +64,19 @@ footer{background:#202020f5}
 @media print{.site-watermark{display:none}}
 
 .finds-intro{padding-bottom:12px}.finds-intro h1{font-size:clamp(44px,7vw,72px)}#item-close{position:sticky;top:0;z-index:2}#purchase-contact{padding:24px 0 0;border-top:2px solid #ff762b}#purchase-contact[hidden],#purchase-ready[hidden]{display:none}.sale-card a:has(.sale-photo){display:block}#item-detail{max-width:820px}#purchase-email-text{font-size:13px}#purchase-contact .button{margin-top:12px}
+
+/* Quote form fields only; labels and left-side contact copy retain their styling. */
+#quote #quote-form input,
+#quote #quote-form select,
+#quote #quote-form textarea{
+ border:1px solid #ff762b;
+ color:#ff995a;
+ background:rgba(115,115,115,.20);
+ caret-color:#ff995a;
+}
+#quote #quote-form input::placeholder,
+#quote #quote-form textarea::placeholder{color:#ff995a;opacity:1}
+#quote #quote-form select option{background:#303030;color:#ff995a}
+#quote #quote-form input:focus,
+#quote #quote-form select:focus,
+#quote #quote-form textarea:focus{outline:2px solid #ff762b;outline-offset:2px;border-color:#ff762b}
