@@ -14,7 +14,7 @@ test('source records remain unchanged by calculations; invalid and future confir
 test('response text alone cannot complete utility review',()=>{const w=complete();w.values.responseConfirmed='';assert.throws(()=>validateStep(w,'locates',now),/confirm all/);});
 
 test('screen saves a private job checklist and linked task without changing job status',async()=>{
- const nodes=new Map();class Node{innerHTML='';textContent='';querySelectorAll(){return [];}};
+ const nodes=new Map();class Node{innerHTML='';textContent='';querySelectorAll(){return [];}querySelector(s){return document.querySelector(s);}};
  globalThis.document={querySelector:s=>{if(!nodes.has(s))nodes.set(s,new Node());return nodes.get(s);},querySelectorAll:()=>[]};
  const {renderCountyWorkflow,selectCountyJob}=await import('../public/county-workflow-ui.js');
  const state={jobs:[{id:'test-job',customerId:'test-customer',origin:'Test site',status:'Inquiry'}],customers:[{id:'test-customer',name:'<img src=x onerror=alert(1)>'}],company:[{name:'Test company'}],employees:[],documents:[],tasks:[]};

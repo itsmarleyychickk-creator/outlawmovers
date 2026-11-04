@@ -22,3 +22,11 @@ Existing customer records, financial amounts and public job status are preserved
 ## Validation
 
 `node --test test/county-workflow.test.js` covers preparation versus issuance, unresolved prerequisites, conditional exemptions, ticket timing/expiry, and closeout dependencies. No live permit applications are submitted by tests.
+
+## Email forms from a job
+
+Expand **Email forms to this customer / owner**. Choose landowner, home-owner, scope clarification or general request text; confirm the recipient and select only the intended documents. The customer email is prefilled privately; another owner’s address must be entered after confirmation. No marital status or authority is inferred.
+
+**Open Gmail draft** and **Open email app** prefill the message. Download selected attachments and attach them there before sending. **Email file with attachments (.eml)** creates a MIME draft with document bytes for compatible desktop mail clients. **Share message & files** uses the device share sheet when supported; confirm the actual recipient in the chosen app. Provider sending credentials are not stored by this feature and no provider-send API is called.
+
+Unsent drafts save in Customer service. Record actual sending separately using a date, reference and explicit confirmation; this remains self-reported. Delivery and signatures are not verified automatically. Upload signed returns and review them before resolving permission steps. Never email private authenticated document links as if they were recipient-accessible attachments. The form-email panel requires a connection to load private document bytes and save history.
