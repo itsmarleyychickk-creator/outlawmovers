@@ -3,7 +3,7 @@ import {reusableTemplates,validateAnswers,templateVersion} from './reusable-form
 export async function renderReusablePdf(type,answers={},logoBytes=null){
  const def=validateAnswers(type,answers),pdf=await PDFDocument.create(),regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),form=pdf.getForm();let page,y,n=0,logo;
  if(logoBytes)try{logo=await pdf.embedPng(logoBytes);}catch{}
- const text=s=>{s=String(s||'');try{regular.encodeText(s);}catch{throw Error('This PDF font cannot display some characters. Use standard English characters in the answers.');}return s;};
+ const text=s=>{s=String(s||'');try{regular.encodeText(s.replace(/[\r\n]/g,''));}catch{throw Error('This PDF font cannot display some characters. Use standard English characters in the answers.');}return s;};
  function newPage(){page=pdf.addPage([612,792]);n++;page.drawRectangle({x:0,y:705,width:612,height:87,color:rgb(.09,.14,.2)});page.drawText('OUTLAW MOVERS LLC',{x:40,y:755,font:bold,size:18,color:rgb(1,1,1)});page.drawText(def.title,{x:40,y:733,font:bold,size:11,color:rgb(1,1,1)});page.drawText('Reusable preparation form | Review before signing | Template '+templateVersion,{x:40,y:716,font:regular,size:8,color:rgb(1,1,1)});
  if(logo){const scale=310/Math.max(logo.width,logo.height),w=logo.width*scale,h=logo.height*scale;page.drawImage(logo,{x:(612-w)/2,y:(792-h)/2,width:w,height:h,opacity:.045});}else page.drawText('OUTLAW MOVERS LLC',{x:115,y:320,font:bold,size:31,rotate:degrees(35),opacity:.045});
  page.drawText('Private when completed. Typed answers do not sign or submit this document.',{x:40,y:25,font:regular,size:8});page.drawText(String(n),{x:566,y:25,font:regular,size:8});y=679;}
