@@ -1,0 +1,19 @@
+import {PDFDocument,StandardFonts,rgb,degrees} from './vendor/pdf-lib.esm.min.js';
+import {reusableTemplates,validateAnswers,templateVersion} from './reusable-form-model.js';
+export async function renderReusablePdf(type,answers={},logoBytes=null){
+ const def=validateAnswers(type,answers),pdf=await PDFDocument.create(),regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),form=pdf.getForm();let page,y,n=0,logo;
+ if(logoBytes)try{logo=await pdf.embedPng(logoBytes);}catch{}
+ const text=s=>{s=String(s||'');try{regular.encodeText(s);}catch{throw Error('This PDF font cannot display some characters. Use standard English characters in the answers.');}return s;};
+ function newPage(){page=pdf.addPage([612,792]);n++;page.drawRectangle({x:0,y:705,width:612,height:87,color:rgb(.09,.14,.2)});page.drawText('OUTLAW MOVERS LLC',{x:40,y:755,font:bold,size:18,color:rgb(1,1,1)});page.drawText(def.title,{x:40,y:733,font:bold,size:11,color:rgb(1,1,1)});page.drawText('Reusable preparation form | Review before signing | Template '+templateVersion,{x:40,y:716,font:regular,size:8,color:rgb(1,1,1)});
+ if(logo){const scale=310/Math.max(logo.width,logo.height),w=logo.width*scale,h=logo.height*scale;page.drawImage(logo,{x:(612-w)/2,y:(792-h)/2,width:w,height:h,opacity:.045});}else page.drawText('OUTLAW MOVERS LLC',{x:115,y:320,font:bold,size:31,rotate:degrees(35),opacity:.045});
+ page.drawText('Private when completed. Typed answers do not sign or submit this document.',{x:40,y:25,font:regular,size:8});page.drawText(String(n),{x:566,y:25,font:regular,size:8});y=679;}
+ const lines=(s,size,width)=>{const result=[];for(const paragraph of text(s).split('\n')){let line='';for(const word of paragraph.split(/\s+/)){if(regular.widthOfTextAtSize((line?line+' ':'')+word,size)>width&&line){result.push(line);line=word;}else line+=(line?' ':'')+word;}result.push(line);}return result;};
+ function para(title,body){const a=lines(body,10,532);if(y-a.length*13-32<56)newPage();page.drawText(title,{x:40,y,font:bold,size:10});y-=17;for(const s of a){page.drawText(s,{x:40,y,font:regular,size:10});y-=13;}y-=13;}
+ function field(key,label,value,multiline=false){const clean=text(value),height=multiline?Math.max(48,lines(clean,10,510).length*13+14):25;if(y-height-29<58)newPage();page.drawText(label,{x:40,y,font:regular,size:9});y-=height+8;const t=form.createTextField(key);if(multiline)t.enableMultiline();t.setText(clean);const size=multiline?10:Math.min(10,510/Math.max(1,regular.widthOfTextAtSize(clean,10))*10);if(size<6||height>520)throw Error('Shorten the answer for '+label+'.');t.addToPage(page,{x:40,y,width:532,height,borderWidth:.6,borderColor:rgb(.45,.5,.56),backgroundColor:rgb(1,1,1),textColor:rgb(0,0,0),font:regular});t.setFontSize(size);y-=19;}
+ newPage();para('Use of this form','Fill the applicable details and leave unknown answers blank for review. Confirm ownership, scope, authority and applicable agency requirements before signing. Blank masters contain no customer data. Signed returns require office review; a saved draft is not permission to start work.');
+ for(const f of def.fields)field(f.key,f.label,answers[f.key]||'',f.multiline);
+ para('Terms for review','Read the following terms together with the related agreement and attachments. Each person signs only in their own role or with documented authority.');for(const [title,body] of def.clauses)para(title,body);
+ para('Signatures','Signature areas are intentionally blank. Use the accepted signing method after reviewing all details; supply representative authority or notarization only where required by the actual agency or agreement.');
+ def.signatures.forEach((label,i)=>field('signature_'+i,label,'',false));form.updateFieldAppearances(regular);pdf.setTitle(def.title+' - Outlaw Movers LLC');pdf.setSubject('Reusable unsigned customer preparation form');return pdf.save();
+}
+export {reusableTemplates};

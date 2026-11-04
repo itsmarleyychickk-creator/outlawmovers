@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {PDFDocument} from '../public/vendor/pdf-lib.esm.min.js';
+import {reusableTemplates,blankAnswers,knownAnswers,validateAnswers} from '../public/reusable-form-model.js';
+import {renderReusablePdf} from '../public/reusable-form-pdf.js';
+test('masters contain no customer, owner, job or signature information',async()=>{for(const t of reusableTemplates){const bytes=await renderReusablePdf(t.id,blankAnswers()),pdf=await PDFDocument.load(bytes),fields=pdf.getForm().getFields();assert.ok(fields.length>10);assert.ok(pdf.getPageCount()>=2);for(const f of fields)if(f.getName()!=='companyName')assert.equal(f.getText()||'','',f.getName());}});
+test('known details fill contacts without guessing ownership or authority',()=>{const a=knownAnswers({customers:[{id:'c',name:'Contact person',email:'test@example.com'}],company:[{name:'Example Company'}]},{customerId:'c',origin:'Example site'});assert.equal(a.customerName,'Contact person');assert.equal(a.site,'Example site');assert.equal(a.landowners,undefined);assert.equal(a.homeowners,undefined);assert.equal(a.authority,undefined);});
+test('separate reusable copies preserve typed answers and leave signatures blank',async()=>{const a={...blankAnswers(),customerName:'Customer A',site:'Site A',landowners:'Owner A',authorizedWork:'Review and approve only the described work.'},b={...a,customerName:'Customer B',site:'Site B'};const first=await PDFDocument.load(await renderReusablePdf('landowner-consent',a)),second=await PDFDocument.load(await renderReusablePdf('landowner-consent',b));assert.equal(first.getForm().getTextField('customerName').getText(),'Customer A');assert.equal(second.getForm().getTextField('customerName').getText(),'Customer B');for(const f of first.getForm().getFields())if(f.getName().startsWith('signature_'))assert.equal(f.getText()||'','');assert.equal(a.customerName,'Customer A');});
+test('future-service wording preserves existing binding obligations',()=>{const t=reusableTemplates.find(t=>t.id==='scope-future-service'),text=t.clauses.map(x=>x[1]).join(' ');assert.match(text,/No free later move/);assert.match(text,/legally required corrective work/);assert.match(text,/mutually accepted amendment/);});
+test('unsupported templates and excessive answers fail clearly',async()=>{assert.throws(()=>validateAnswers('unknown',{}),/Choose/);assert.throws(()=>validateAnswers('landowner-consent',{site:'x'.repeat(1501)}),/Shorten/);await assert.rejects(()=>renderReusablePdf('landowner-consent',{customerName:'😀'}),/font cannot/);});
+
+test('saved reusable drafts are private, job-specific and remain unsigned',async()=>{
+ const nodes=new Map();class Node{innerHTML='';textContent='';value='';querySelector(s){return document.querySelector(s);}querySelectorAll(){return [];}}
+ globalThis.document={querySelector:s=>{if(!nodes.has(s))nodes.set(s,new Node());return nodes.get(s);}};
+ const {renderReusableForms}=await import('../public/reusable-form-ui.js'),calls=[];
+ const state={messages:[{id:'other-draft',jobId:'another-job',reusableForm:{type:'landowner-consent',title:'Other private customer'}}],customers:[],company:[]};
+ renderReusableForms(state,{id:'job-test',customerId:'contact-test'},{api:async(path,method,body)=>{calls.push({path,method,body});return {id:'saved-copy',updatedAt:'2026-11-04T10:00:00Z',...body};},refresh:async()=>{}});
+ assert.doesNotMatch(nodes.get('#reusable-forms').innerHTML,/Other private customer/);
+ const Original=globalThis.FormData;globalThis.FormData=class extends Map{constructor(){super([['copyTitle','Permission for review'],['answer-companyName','Outlaw Movers LLC'],['answer-customerName','Test contact'],['answer-site','Test property']]);}};
+ try{nodes.get('#reusable-form').onsubmit({preventDefault(){}});await new Promise(r=>setTimeout(r,10));assert.equal(calls[0].path,'messages');assert.equal(calls[0].body.jobId,'job-test');assert.equal(calls[0].body.draft,true);assert.equal(calls[0].body.signaturesVerified,false);assert.equal(calls[0].body.reusableForm.answers.customerName,'Test contact');}finally{globalThis.FormData=Original;delete globalThis.document;}
+});
