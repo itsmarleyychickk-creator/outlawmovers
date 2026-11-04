@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {steps,makeWorkflow,nextStep,ticketIssue,blockers,validateStep} from '../public/county-workflow-model.js';
+const now=new Date('2026-11-04T16:00:00Z');
+const complete=()=>{const w=makeWorkflow();for(const s of steps)w.steps[s.id]={status:'Complete',evidence:'Issued source / staff review',confirmedOn:'2026-11-04'};w.values={releaseReviewer:'Staff',releaseNotes:'Reviewed site conditions',ticketNumber:'test',legalStart:'2026-11-03T08:00:00-06:00',ticketExpires:'2026-11-20T08:00:00-06:00',responses:'All operator responses checked',privateUtilities:'Private system reviewed',locateReviewedOn:'2026-11-04',responseConfirmed:'on',privateConfirmed:'on'};for(const step of steps)for(const [key] of step.fields)if(!(key in w.values))w.values[key]='Recorded review';return w;};
+test('new customers start with unresolved intake and permits',()=>{const w=makeWorkflow();assert.equal(nextStep(w).id,'intake');assert.ok(blockers(w,now).length>10);});
+test('issued application alone never unlocks readiness',()=>{const w=makeWorkflow();w.values={releaseReviewer:'Staff',releaseNotes:'Review'};w.steps.cloudpermit={status:'Complete',evidence:'Submitted',confirmedOn:'2026-11-04'};w.steps.release={status:'Complete',evidence:'test',confirmedOn:'2026-11-04'};assert.throws(()=>validateStep(w,'release',now),/blockers/);});
+test('ticket gate checks start, expiry, offset and responses',()=>{const w=complete();assert.equal(ticketIssue(w,now),'');w.values.legalStart='2026-11-05T08:00:00-06:00';assert.match(ticketIssue(w,now),/not arrived/);w.values.legalStart='2026-11-03T08:00:00';assert.match(ticketIssue(w,now),/timezone/);w.values.legalStart='2026-11-03T08:00:00-06:00';w.values.ticketExpires='2026-11-04T08:00:00-06:00';assert.match(ticketIssue(w,now),/expired/);w.values.ticketExpires='2026-11-20T08:00:00-06:00';w.steps.locates.status='Waiting';assert.match(ticketIssue(w,now),/unresolved/);});
+test('exemptions need evidence, and mandatory reviews cannot be skipped',()=>{const w=makeWorkflow();w.steps.water={status:'Not applicable'};assert.throws(()=>validateStep(w,'water',now),/evidence/);w.steps.water={status:'Not applicable',evidence:'Agency written no-impact determination',confirmedOn:'2026-11-04'};validateStep(w,'water',now);w.steps.intake={...w.steps.water};assert.throws(()=>validateStep(w,'intake',now),/completion/);});
+test('later work and closeout cannot complete over unresolved earlier steps',()=>{const w=complete();w.steps.issued.status='Waiting';assert.throws(()=>validateStep(w,'work',now),/Earlier unresolved/);assert.throws(()=>validateStep(w,'closeout',now),/Earlier unresolved/);});
+test('non-excavation review can document both 811 items as not applicable',()=>{const w=complete();w.steps.ticket.status='Not applicable';w.steps.locates.status='Not applicable';w.values={releaseReviewer:'Staff',releaseNotes:'Reviewed site conditions'};assert.equal(ticketIssue(w,now),'');validateStep(w,'release',now);});
+test('source records remain unchanged by calculations; invalid and future confirmations rejected',()=>{const w=complete(),before=JSON.stringify(w);nextStep(w);blockers(w,now);assert.equal(JSON.stringify(w),before);w.steps.water.confirmedOn='2026-11-05';assert.throws(()=>validateStep(w,'water',now),/future/);w.steps.water.confirmedOn='2026-02-30';assert.throws(()=>validateStep(w,'water',now),/valid/);});
+
+test('response text alone cannot complete utility review',()=>{const w=complete();w.values.responseConfirmed='';assert.throws(()=>validateStep(w,'locates',now),/confirm all/);});
+
+test('screen saves a private job checklist and linked task without changing job status',async()=>{
+ const nodes=new Map();class Node{innerHTML='';textContent='';querySelectorAll(){return [];}};
+ globalThis.document={querySelector:s=>{if(!nodes.has(s))nodes.set(s,new Node());return nodes.get(s);},querySelectorAll:()=>[]};
+ const {renderCountyWorkflow,selectCountyJob}=await import('../public/county-workflow-ui.js');
+ const state={jobs:[{id:'test-job',customerId:'test-customer',origin:'Test site',status:'Inquiry'}],customers:[{id:'test-customer',name:'<img src=x onerror=alert(1)>'}],company:[{name:'Test company'}],employees:[],documents:[],tasks:[]};
+ const calls=[];const context={api:async(path,method,body)=>{calls.push({path,method,body});if(path==='state')return structuredClone(state);if(path==='jobs/test-job'){state.jobs[0]=body;return body;}return body;},refresh:async()=>{},editor:()=>{}};
+ selectCountyJob('test-job');renderCountyWorkflow(state,context);
+ assert.match(nodes.get('#content').innerHTML,/&lt;img/);assert.doesNotMatch(nodes.get('#content').innerHTML,/<img src=x/);
+ const OriginalFormData=globalThis.FormData;globalThis.FormData=class extends Map{constructor(){super([['status','In progress'],['evidence','Intake awaiting owner documents'],['due','2026-11-10'],['employeeId',''],['confirmedOn',''],['value-site','Test site']]);}};
+ try{await nodes.get('#county-task').onclick();assert.equal(state.jobs[0].status,'Inquiry');assert.equal(state.jobs[0].countyWorkflow.steps.intake.status,'In progress');assert.equal(calls.find(c=>c.path==='tasks').body.countyWorkflowStep,'intake');assert.equal(calls.find(c=>c.path==='tasks').body.done,false);}finally{globalThis.FormData=OriginalFormData;delete globalThis.document;}
+});
