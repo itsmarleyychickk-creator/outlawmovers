@@ -1,4 +1,5 @@
 import {createClient} from '@supabase/supabase-js';
+import {officeLoginURL,officeReturnURL,documentURL} from './document-access.js';
 if(location.protocol!=='https:'){
  const main=document.createElement('main');main.className='customer-main';const title=document.createElement('h1');title.textContent='Secure connection required';const message=document.createElement('p');message.textContent='Administrator sign-in is blocked over HTTP. Enable HTTPS for the GitHub Pages custom domain before entering your email or password.';const link=document.createElement('a');const secure=new URL(location.href);secure.protocol='https:';link.href=secure.href;link.textContent='Open HTTPS office';main.append(title,message,link);document.body.replaceChildren(main);throw Error('HTTPS required for the office');
 }
@@ -7,7 +8,7 @@ const project='https://uuwaomequwaktlvgmaid.supabase.co';
 const key='sb_publishable_M5JNDnIHWqObZd8iwVwc4A_ug3IxVYJ';
 const db=createClient(project,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const nativeFetch=window.fetch.bind(window);
-const loginURL=new URL('login.html',location.href).href;
+const loginURL=officeLoginURL(location.href);
 window.fetch=async(input,options={})=>{
  const path=typeof input==='string'?input:'';
  if(!path.startsWith('/api/'))return nativeFetch(input,options);
@@ -18,11 +19,13 @@ window.fetch=async(input,options={})=>{
  if(res.status===401){await db.auth.signOut();location.replace(loginURL);}return res;
 };
 async function download(path,name){const res=await fetch(path);if(!res.ok)throw Error((await res.json()).error);const url=URL.createObjectURL(await res.blob());const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
-document.addEventListener('click',async e=>{const a=e.target.closest('a');if(!a)return;const path=a.getAttribute('href');if(path==='/transport-packet.pdf'||path?.startsWith('/api/evidence/')){e.preventDefault();try{await download(path==='/transport-packet.pdf'?'/api/source-packet':path,path==='/transport-packet.pdf'?'transport-packet.pdf':a.textContent.replace(' ↓','').trim());}catch(err){alert(err.message);}}});
-if(document.querySelector('#login')){
+document.addEventListener('click',async e=>{const a=e.target.closest('a');if(!a)return;const path=a.getAttribute('href');if(path==='/transport-packet.pdf'||path?.startsWith('/api/evidence/')){e.preventDefault();try{if(path.startsWith('/api/evidence/')){location.href=documentURL(decodeURIComponent(path.slice('/api/evidence/'.length)),location.href);return;}await download('/api/source-packet','transport-packet.pdf');}catch(err){alert(err.message);}}});
+if(document.querySelector('#document-viewer')){
+ await (await import('./document-viewer.js')).showDocumentViewer({db,loginURL});
+}else if(document.querySelector('#login')){
  const form=document.querySelector('#login'),status=document.querySelector('#error');
  const show=e=>{status.textContent=e?.message||String(e);};
- form.onsubmit=async e=>{e.preventDefault();try{status.textContent='Signing in…';const f=new FormData(form),r=await db.auth.signInWithPassword({email:String(f.get('email')).trim(),password:String(f.get('password'))});if(r.error)throw r.error;const access=await db.rpc('office_access');if(access.error||!access.data){await db.auth.signOut();throw Error('This verified account does not have administrator access.');}location.href='./';}catch(err){show(err);}};
+ form.onsubmit=async e=>{e.preventDefault();try{status.textContent='Signing in…';const f=new FormData(form),r=await db.auth.signInWithPassword({email:String(f.get('email')).trim(),password:String(f.get('password'))});if(r.error)throw r.error;const access=await db.rpc('office_access');if(access.error||!access.data){await db.auth.signOut();throw Error('This verified account does not have administrator access.');}location.href=officeReturnURL(location.href);}catch(err){show(err);}};
  document.querySelector('#create-account').onclick=async()=>{try{if(!form.reportValidity())return;const f=new FormData(form),r=await db.auth.signUp({email:String(f.get('email')).trim(),password:String(f.get('password')),options:{emailRedirectTo:new URL('./',location.href).href}});if(r.error)throw r.error;show('Check your email to confirm your account, then return here and sign in. Creating an account does not grant office access.');}catch(e){show(e);}};
  document.querySelector('#reset-password').onclick=async()=>{try{const email=form.elements.email.value.trim();if(!email)throw Error('Enter your email first.');const r=await db.auth.resetPasswordForEmail(email,{redirectTo:new URL('login.html',location.href).href});if(r.error)throw r.error;show('If the account exists, a password reset email will arrive.');}catch(e){show(e);}};
  let recovery=location.hash.includes('type=recovery');db.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovery=true;document.querySelector('#update-password').hidden=false;}});
@@ -32,3 +35,4 @@ if(document.querySelector('#login')){
  const {data:{user},error}=await db.auth.getUser();
  if(error||!user){location.replace(loginURL);}else{const access=await db.rpc('office_access');if(access.error||!access.data){await db.auth.signOut();location.replace(loginURL);}else{document.querySelector('.avatar span').textContent=user.email;await import('./app.js');}}
 }
+

@@ -1,3 +1,9 @@
+## Private document viewing — November 8, 2026
+
+Saved evidence links in the online office open a dedicated private viewer. PDF and image previews include a Save option and an Open PDF / print option for phones whose embedded preview is blank. Word files download for editing in Word; upload the revised copy separately. The viewer preserves uploaded bytes and does not edit the original.
+
+A direct office link has the form `/office/document.html?id=<document UUID>`. It requires the existing verified, authorized staff session. A signed-out staff member returns to that same document after signing in. Return destinations are restricted to the same office document page; external redirects are rejected. Do not publish private document IDs or create public Storage links. The backend still verifies the session and office allowlist on every download.
+
 ## Office expansion — October 14, 2026
 
 The public footer has a Staff sign in link to `/office/login.html`. The business email has been authorized privately; create the account and confirm the email before first sign-in. No password is stored in source. HTTPS and Auth redirect configuration below still require live confirmation before relying on sign-in.
@@ -78,3 +84,4 @@ Record **Submitted** with an actual submission date and receipt/reference; recor
 ## Expandable fleet records
 
 Trucks & equipment groups toter trucks, other trucks/trailers, and equipment/attachments. Each unit expands into identification, assigned items, linked jobs/permits, linked compliance worksheets, maintenance/tasks, private documents and history. Expand all / Collapse all applies to the displayed sections. Link equipment to a parent truck in Edit record; link a compliance worksheet with its Related truck / equipment selector. Truck VINs and identifiers are never guessed. Existing field values and private documents are preserved when editing a vehicle.
+
