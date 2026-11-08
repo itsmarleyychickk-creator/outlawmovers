@@ -57,3 +57,11 @@ test('published modules and source use identical viewer assets and login integra
  for(const file of ['document-access.js','document-viewer.js','document.html'])assert.equal(readFileSync(new URL('../online/'+file,import.meta.url),'utf8'),readFileSync(new URL('../docs/office/'+file,import.meta.url),'utf8'));
  for(const file of ['../online/client.js','../docs/office/client.js']){const content=readFileSync(new URL(file,import.meta.url),'utf8');assert.match(content,/officeLoginURL\(location.href\)/);assert.match(content,/officeReturnURL\(location.href\)/);assert.match(content,/showDocumentViewer/);assert.match(content,/documentURL\(decodeURIComponent/);}
 });
+test('download API exposes its filename while retaining authentication and origin checks',async()=>{
+ const source=readFileSync(new URL('../supabase/functions/office-api/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');let handler;
+ new Function('Deno',source)({serve(fn){handler=fn;}});
+ const response=await handler(new Request('https://api.example/office-api?path=evidence/'+id,{headers:{Origin:'https://outlawmoversllc.com'}}));
+ assert.equal(response.status,401);assert.equal((await response.json()).error,'Administrator login required');assert.match(response.headers.get('Access-Control-Expose-Headers'),/Content-Disposition/);assert.equal(response.headers.get('Cache-Control'),'no-store');
+ const denied=await handler(new Request('https://api.example/office-api',{headers:{Origin:'https://other.example'}}));assert.equal(denied.status,403);
+ const preflight=await handler(new Request('https://api.example/office-api',{method:'OPTIONS',headers:{Origin:'https://outlawmoversllc.com'}}));assert.equal(preflight.status,204);
+});

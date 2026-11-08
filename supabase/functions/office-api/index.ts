@@ -1,3 +1,4 @@
+import {readInlineEvidence} from './inline-evidence.js';
 import {createClient} from '@supabase/supabase-js';
 import {requirements,reminders,dateValid} from './compliance.js';
 import {formCatalog,validateForm,renderForm} from './forms.js';
@@ -50,7 +51,7 @@ async function validate(db,kind,b){
  if(kind==='company'&&['standing','authority','insurance'].some(k=>!['Needs verification','Verified'].includes(b[k])))throw Error('Invalid verification status');
 }
 Deno.serve(async req=>{
- const origin=req.headers.get('Origin');const headers={'Access-Control-Allow-Origin':origins.includes(origin)?origin:origins[0],'Vary':'Origin','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'GET, POST, PUT, DELETE, OPTIONS','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
+ const origin=req.headers.get('Origin');const headers={'Access-Control-Allow-Origin':origins.includes(origin)?origin:origins[0],'Vary':'Origin','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Expose-Headers':'Content-Disposition, Content-Type','Access-Control-Allow-Methods':'GET, POST, PUT, DELETE, OPTIONS','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
  const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{...headers,'Content-Type':'application/json'}});
  if(origin&&!origins.includes(origin))return json({error:'Origin not permitted'},403);
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
@@ -85,7 +86,7 @@ Deno.serve(async req=>{
  check(await db.storage.from(bucket).upload(path,bytes,{contentType:'application/octet-stream'}));check(await db.from('office_documents').insert({id:docId,record_id:b.recordId,name,path}));check(await db.from('office_audit').insert({record_id:b.recordId,body:{recordId:b.recordId,action:'Document uploaded',name,at:new Date().toISOString()}}));return json({id:docId,name},201);
  }
  if(kind==='evidence'&&id&&req.method==='GET'){
- const d=check(await db.from('office_documents').select('path,name').eq('id',id).single());const blob=check(await db.storage.from(bucket).download(d.path));return new Response(blob,{headers:{...headers,'Content-Type':'application/octet-stream','Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(d.name)}});
+ const d=check(await db.from('office_documents').select('id,record_id,path,name').eq('id',id).single());const blob=d.path.startsWith('inline/')?await readInlineEvidence(db,d):check(await db.storage.from(bucket).download(d.path));return new Response(blob,{headers:{...headers,'Content-Type':'application/octet-stream','Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(d.name)}});
  }
  if(kind==='customer-link')return json({error:'Online customer tracking is not connected. Use the office phone or email.'},400);
  if(!kinds.includes(kind))return json({error:'Not found'},404);
