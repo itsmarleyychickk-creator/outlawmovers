@@ -54,8 +54,9 @@ test('viewer shows a recoverable error for denied access without a document link
  }finally{f.restore();}
 });
 test('published modules and source use identical viewer assets and login integration',()=>{
- for(const file of ['document-access.js','document-viewer.js','document.html'])assert.equal(readFileSync(new URL('../online/'+file,import.meta.url),'utf8'),readFileSync(new URL('../docs/office/'+file,import.meta.url),'utf8'));
- for(const file of ['../online/client.js','../docs/office/client.js']){const content=readFileSync(new URL(file,import.meta.url),'utf8');assert.match(content,/officeLoginURL\(location.href\)/);assert.match(content,/officeReturnURL\(location.href\)/);assert.match(content,/showDocumentViewer/);assert.match(content,/documentURL\(decodeURIComponent/);}
+ for(const file of ['document-access.js','document-viewer.js','document.html','auth-login.js','login.html'])assert.equal(readFileSync(new URL('../online/'+file,import.meta.url),'utf8'),readFileSync(new URL('../docs/office/'+file,import.meta.url),'utf8'));
+ const source=readFileSync(new URL('../online/client.js',import.meta.url),'utf8');assert.match(source,/officeLoginURL\(location.href\)/);assert.match(source,/showDocumentViewer/);assert.match(source,/documentURL\(decodeURIComponent/);
+ const published=readFileSync(new URL('../docs/office/client.js',import.meta.url),'utf8');for(const module of ['./document-access.js','./document-viewer.js','./auth-login.js'])assert.ok(published.includes(module));
 });
 test('download API exposes its filename while retaining authentication and origin checks',async()=>{
  const source=readFileSync(new URL('../supabase/functions/office-api/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');let handler;

@@ -85,3 +85,11 @@ Record **Submitted** with an actual submission date and receipt/reference; recor
 
 Trucks & equipment groups toter trucks, other trucks/trailers, and equipment/attachments. Each unit expands into identification, assigned items, linked jobs/permits, linked compliance worksheets, maintenance/tasks, private documents and history. Expand all / Collapse all applies to the displayed sections. Link equipment to a parent truck in Edit record; link a compliance worksheet with its Related truck / equipment selector. Truck VINs and identifiers are never guessed. Existing field values and private documents are preserved when editing a vehicle.
 
+## Remembered sessions and passwordless sign-in — November 9, 2026
+
+Open `/office/` or `/office/login.html` in the same browser to resume an existing session automatically. The login page validates the saved session with Supabase Auth and the server-managed office allowlist before entering the office. Email sign-in links are available through **Email me a sign-in link**, with automatic account creation disabled. Supabase Auth sends the link to the entered email; possession of an email address alone never grants office access. Session persistence and automatic token refresh remain enabled. No password is saved by the page.
+
+The browser remembers the last sign-in email. A private document return destination is stored for up to 30 minutes and validated against the existing office-document redirect rules. Recovery links open the new-password controls without an automatic redirect; after a successful password update, the authorized session enters the office. Clearing browser data, private browsing, signing out or session revocation can require another login. Use the sign-in link on the device/browser where access is wanted.
+
+Auth redirects use the existing exact `https://outlawmoversllc.com/office/login.html` destination. Supabase Site URL and redirect allowlist must still include the live office URLs described below. This change does not alter RLS, the office allowlist, existing passwords or business records.
+

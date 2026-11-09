@@ -1,11 +1,13 @@
 import {createClient} from '@supabase/supabase-js';
-import {officeLoginURL,officeReturnURL,documentURL} from './document-access.js';
+import {officeLoginURL,documentURL} from './document-access.js';
+import {setupOfficeLogin} from './auth-login.js';
 if(location.protocol!=='https:'){
  const main=document.createElement('main');main.className='customer-main';const title=document.createElement('h1');title.textContent='Secure connection required';const message=document.createElement('p');message.textContent='Administrator sign-in is blocked over HTTP. Enable HTTPS for the GitHub Pages custom domain before entering your email or password.';const link=document.createElement('a');const secure=new URL(location.href);secure.protocol='https:';link.href=secure.href;link.textContent='Open HTTPS office';main.append(title,message,link);document.body.replaceChildren(main);throw Error('HTTPS required for the office');
 }
 const project='https://uuwaomequwaktlvgmaid.supabase.co';
 // This publishable key is deliberately public. RLS and verified administrator access protect data.
 const key='sb_publishable_M5JNDnIHWqObZd8iwVwc4A_ug3IxVYJ';
+const recoveryRequested=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery';
 const db=createClient(project,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const nativeFetch=window.fetch.bind(window);
 const loginURL=officeLoginURL(location.href);
@@ -23,14 +25,8 @@ document.addEventListener('click',async e=>{const a=e.target.closest('a');if(!a)
 if(document.querySelector('#document-viewer')){
  await (await import('./document-viewer.js')).showDocumentViewer({db,loginURL});
 }else if(document.querySelector('#login')){
- const form=document.querySelector('#login'),status=document.querySelector('#error');
- const show=e=>{status.textContent=e?.message||String(e);};
- form.onsubmit=async e=>{e.preventDefault();try{status.textContent='Signing in…';const f=new FormData(form),r=await db.auth.signInWithPassword({email:String(f.get('email')).trim(),password:String(f.get('password'))});if(r.error)throw r.error;const access=await db.rpc('office_access');if(access.error||!access.data){await db.auth.signOut();throw Error('This verified account does not have administrator access.');}location.href=officeReturnURL(location.href);}catch(err){show(err);}};
- document.querySelector('#create-account').onclick=async()=>{try{if(!form.reportValidity())return;const f=new FormData(form),r=await db.auth.signUp({email:String(f.get('email')).trim(),password:String(f.get('password')),options:{emailRedirectTo:new URL('./',location.href).href}});if(r.error)throw r.error;show('Check your email to confirm your account, then return here and sign in. Creating an account does not grant office access.');}catch(e){show(e);}};
- document.querySelector('#reset-password').onclick=async()=>{try{const email=form.elements.email.value.trim();if(!email)throw Error('Enter your email first.');const r=await db.auth.resetPasswordForEmail(email,{redirectTo:new URL('login.html',location.href).href});if(r.error)throw r.error;show('If the account exists, a password reset email will arrive.');}catch(e){show(e);}};
- let recovery=location.hash.includes('type=recovery');db.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovery=true;document.querySelector('#update-password').hidden=false;}});
- if(recovery)document.querySelector('#update-password').hidden=false;
- document.querySelector('#update-password').onclick=async()=>{try{const password=form.elements.password.value;if(password.length<12)throw Error('Use at least 12 characters.');const r=await db.auth.updateUser({password});if(r.error)throw r.error;await db.auth.signOut();show('Password updated. Sign in with the new password.');document.querySelector('#update-password').hidden=true;}catch(e){show(e);}};
+ let loginStorage;try{loginStorage=window.localStorage;}catch{/* Storage may be disabled by the browser. */}
+ await setupOfficeLogin({db,document,location,storage:loginStorage,recoveryRequested});
 }else{
  const {data:{user},error}=await db.auth.getUser();
  if(error||!user){location.replace(loginURL);}else{const access=await db.rpc('office_access');if(access.error||!access.data){await db.auth.signOut();location.replace(loginURL);}else{document.querySelector('.avatar span').textContent=user.email;await import('./app.js');}}
